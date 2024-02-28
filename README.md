@@ -1,14 +1,14 @@
 - High-level approach
-    - To deploy the CDN, use ./deployCDN -p \<port> -o \<origin> -n \<name> -u \<username> -i \<keyfile>, this will deploy everything needed including databases for DNS server and all replicas
-    - To activate the CDN, use ./runCDN -p \<port> -o \<origin> -n \<name> -u \<username> -i \<keyfile>, this will turn on subprocesses on each server
-    - To stop the CDN, use ./stopCDN -p \<port> -o \<origin> -n \<name> -u \<username> -i \<keyfile>, this will kill all relevant processes, but the files still remain on the disk
+    - To deploy the CDN, use `./deployCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>`, this will deploy everything needed including databases for DNS server and all replicas
+    - To activate the CDN, use `./runCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>`, this will turn on subprocesses on each server
+    - To stop the CDN, use `./stopCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>`, this will kill all relevant processes, but the files still remain on the disk
 
 - Implementation:
     - DNS Server
       - To implement the DNS server, we use the GeoIP database to help locate client request physical address.
 Since the database file is too big to be accepted by gradescope, during the deployment stage, we use python.requests and python.zipfile libraries to download database and unzip the database to extract the IPv4.csv file. To make good use of the csv file, we use python.sqlite3 library to build a database named geoip.db to help search for physical longitude and latitude. Because the raw csv file only contains subnet, so we need to find the max host address and min host address of each subnet and store both of them in the geoip.db file. Since all ip addresses are stored as numeric, database index can be set up to accelerate the search and time complexity can be reduced to log(N).
 The database technique is a good strategy since we don't need to spend time waiting for RTT from geoip server. Besides, we also use mul-threaded server and python.dnslib to help pack DNS request dealing with multiple client requests at the same time.
-    - HTTP Server
+    - Replica Server
       - Use requests library to send GET request to origin server to get contents that are not in replica cache, and handle unicode error.
       - Use BaseHTTPRequestHandler to handle GET request from clients by overriding do_GET() function.
       - Use threading to handle request from clients to avoid program crushing.
@@ -31,7 +31,7 @@ The database technique is a good strategy since we don't need to spend time wait
     - Need to find suitable method to compress string so that it will not consume more time.
 
 - Future Enhancements:
-    - for dns server, we could probably use scamper to do active probes.
-    - we could build a protocol between dns server and httpservers so dns server can intelligently know the contents cached on replicas. 
-    - connect with DNS to make the cache strategy more smart and DNS can response the nearst replica who owns the page in cache.
-    - find more effective method to rank each page's priority
+    - For DNS server, we could probably use scamper to do active probes.
+    - We could build a protocol between dns server and httpservers so dns server can intelligently know the contents cached on replicas. 
+    - Connect with DNS to make the cache strategy more smart and DNS can response the nearst replica who owns the page in cache.
+    - Find more effective method to rank each page's priority
